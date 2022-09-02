@@ -51,30 +51,29 @@ bukkit {
     author = "ft"
     prefix = "CDT"
 
-    /*
+
     commands {
-        register("command") {
-            description = "Just a command!"
-            aliases = listOf("cmd")
-            permission = "command.children"
-            usage = "/command"
-            permissionMessage = "no perm"
+        register("deeplchattranslator") {
+            description = "main command of Deepl chat translator"
+            aliases = listOf("dct")
+            permission = "dct.command.deeplchattranslator"
+            usage = "/dct"
+            permissionMessage = "No permission"
         }
     }
 
 
     permissions {
-        register("command.*") {
-            children = listOf("ktt.children")
-
+        register("dct.*") {
+            children = listOf("dct.command.deeplchattranslator")
         }
 
-        register("command.children") {
-            description = "the childlen command"
+        register("dct.command.deeplchattranslator") {
+            description = "Permission node for Deepl chat translator main command"
             default = BukkitPluginDescription.Permission.Default.OP
         }
     }
-    */
+
 }
 
 
