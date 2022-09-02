@@ -8,7 +8,6 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.TextComponent
 import net.kyori.adventure.text.event.HoverEvent
 import net.kyori.adventure.text.format.NamedTextColor
-import org.bukkit.Bukkit
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.event.EventHandler
@@ -55,17 +54,9 @@ class DeeplChatTranslator: JavaPlugin(), Listener {
     @EventHandler
     fun onChat(e: AsyncChatEvent){
         if(PluginManager.getTranslationState()) {
-            e.isCancelled = true
             val component: TextComponent = e.originalMessage() as TextComponent
-            val playerName = e.player.name() as TextComponent
             val translated = invokeWebRequest(component.content(), "JA")
-            for (p in Bukkit.getOnlinePlayers()) {
-                p.sendMessage(
-                    Component.text("${playerName.content()}: $translated")
-                        .hoverEvent(HoverEvent.showText(component.color(NamedTextColor.WHITE)))
-                )
-            }
-            server.logger.info("${playerName.content()}: ${component.content()} | $translated")
+            e.message(Component.text(translated).hoverEvent(HoverEvent.showText(component.color(NamedTextColor.WHITE))))
         }
     }
 
