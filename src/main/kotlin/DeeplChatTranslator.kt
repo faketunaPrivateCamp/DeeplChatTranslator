@@ -2,6 +2,8 @@ package jp.faketuna.paper.deeplchattranslator
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.papermc.paper.event.player.AsyncChatEvent
+import jp.faketuna.paper.deeplchattranslator.commands.MainCommand
+import jp.faketuna.paper.deeplchattranslator.commands.MainCommandTabCompleter
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.TextComponent
 import net.kyori.adventure.text.event.HoverEvent
@@ -21,12 +23,28 @@ import java.net.URL
 class DeeplChatTranslator: JavaPlugin(), Listener {
 
     private lateinit var pluginConfig:FileConfiguration
-    private var apiKey: String? = null
+
+    object PluginManager{
+        private const val pluginVersion = "1.0.0"
+        private const val pluginPrefix = "§6[DCT]§r"
+        private var translationState = false
+        private var apiKey: String? = null
+
+        fun getPluginVerison(): String { return this.pluginVersion }
+        fun getPluginPrefix(): String { return this.pluginPrefix }
+
+        fun setTranslationState(b: Boolean) { this.translationState = b }
+        fun getTranslationState(): Boolean { return this.translationState }
+
+        fun setApiKey(apiKey: String?) { this.apiKey = apiKey }
+        fun getApiKey(): String? { return this.apiKey }
+    }
 
     override fun onEnable() {
         loadPluginConfig()
         server.pluginManager.registerEvents(this, this)
-
+        this.getCommand("deeplchattranslator")!!.setExecutor(MainCommand())
+        this.getCommand("deeplchattranslator")!!.setTabCompleter(MainCommandTabCompleter())
         logger.info("plugin loaded!")
     }
 
@@ -36,14 +54,19 @@ class DeeplChatTranslator: JavaPlugin(), Listener {
 
     @EventHandler
     fun onChat(e: AsyncChatEvent){
-        e.isCancelled = true
-        val component:TextComponent = e.originalMessage() as TextComponent
-        val playerName = e.player.name() as TextComponent
-        val translated = invokeWebRequest(component.content(), "JA")
-        for (p in Bukkit.getOnlinePlayers()){
-            p.sendMessage(Component.text("${playerName.content()}: $translated").hoverEvent(HoverEvent.showText(component.color(NamedTextColor.WHITE))))
+        if(PluginManager.getTranslationState()) {
+            e.isCancelled = true
+            val component: TextComponent = e.originalMessage() as TextComponent
+            val playerName = e.player.name() as TextComponent
+            val translated = invokeWebRequest(component.content(), "JA")
+            for (p in Bukkit.getOnlinePlayers()) {
+                p.sendMessage(
+                    Component.text("${playerName.content()}: $translated")
+                        .hoverEvent(HoverEvent.showText(component.color(NamedTextColor.WHITE)))
+                )
+            }
+            server.logger.info("${playerName.content()}: ${component.content()} | $translated")
         }
-        server.logger.info("${playerName.content()}: ${component.content()} | $translated")
     }
 
 
@@ -56,7 +79,7 @@ class DeeplChatTranslator: JavaPlugin(), Listener {
             doOutput = true
             setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
             setRequestProperty("Content-Length", postData.length.toString())
-            setRequestProperty("Authorization", apiKey)
+            setRequestProperty("Authorization", PluginManager.getApiKey())
             setRequestProperty("User-Agent", "DCT/1.0.0")
             useCaches = false
 
@@ -81,7 +104,7 @@ class DeeplChatTranslator: JavaPlugin(), Listener {
 
 
     private fun loadPluginConfig(){
-        val file = File(this.dataFolder, "key.yml")
+        val file = File(this.dataFolder, "config.yml")
         val exists = file.exists()
         if (!exists){
             try{
@@ -93,14 +116,16 @@ class DeeplChatTranslator: JavaPlugin(), Listener {
 
         if (!exists){
             pluginConfig.set("apiKey", "YOUR DEEPL API KEY")
+            pluginConfig.set("enabled", false)
             savePluginConfig()
         }
 
-        apiKey = pluginConfig.getString("apiKey")
+        PluginManager.setApiKey(pluginConfig.getString("apiKey"))
+        PluginManager.setTranslationState(pluginConfig.getBoolean("enabled"))
     }
 
     private fun savePluginConfig(){
-        val file = File(this.dataFolder, "key.yml")
+        val file = File(this.dataFolder, "config.yml")
         pluginConfig.save(file)
     }
 }
